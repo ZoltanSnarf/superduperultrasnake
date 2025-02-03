@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameArea {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #board {
+            width: 400px;
+            height: 400px;
+            background-color: #fff;
+            border: 2px solid #000;
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(20, 1fr);
+            transition: background-color 1s ease;
+        }
+        .cell {
+            border: 1px solid #ccc;
+        }
+        .snake {
+            background-color: #34eb3a;
+        }
+        .food {
+            background-color: red;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        #score {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #toggleSwitch {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameArea">
+        <button onclick="startGame()">Start Game</button>
+        <div id="score">Score: 0</div>
+        <label id="toggleSwitch">
+            <input type="checkbox" id="selfPlayToggle"> Self-Play Mode
+        </label>
+        <div id="board"></div>
+    </div>
+<script>
+    const board = document.getElementById('board');
+    let scoreDisplay = document.getElementById('score');
+    let gridSize = 20;
+    let snake = [{x: 10, y: 10}];
+    let foods = [getRandomPosition()];
+    let direction = null;
+    let intervalTime = 100;
+    let intervalId = null;
+    let score = 0;
+    let firstKeyPress = false;
+    let selfPlay = false;
+    let targetFood = null;
+
+    document.getElementById('selfPlayToggle').addEventListener('change', (e) => {
+        selfPlay = e.target.checked;
+    });
+
+    function startGame() {
+        if (intervalId) clearInterval(intervalId);
+        snake = [{x: 10, y: 10}];
+        foods = [getRandomPosition()];
+        direction = null;
+        intervalTime = 100;
+        score = 0;
+        firstKeyPress = false;
+        updateScore();
+        renderBoard();
+    }
+
+    function moveSnake() {
+        let head = {...snake[0]};
+        if (selfPlay) {
+            if (!targetFood || (head.x === targetFood.x && head.y === targetFood.y)) {
+                targetFood = getFurthestFood(head);
+            }
+            direction = getBestDirection(head, targetFood);
+        }
+        switch (direction) {
+            case 'Up': head.y -= 1; break;
+            case 'Down': head.y += 1; break;
+            case 'Left': head.x -= 1; break;
+            case 'Right': head.x += 1; break;
+        }
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+            clearInterval(intervalId);
+            playSound('boop');
+            alert('Game Over! Your score is ' + score);
+            return;
+        }
+        for (let i = 1; i < snake.length; i++) {
+            if (snake[i].x === head.x && snake[i].y === head.y) {
+                clearInterval(intervalId);
+                playSound('boop');
+                alert('Game Over! Your score is ' + score);
+                return;
+            }
+        }
+        let ateFood = false;
+        for (let i = 0; i < foods.length; i++) {
+            if (head.x === foods[i].x && head.y === foods[i].y) {
+                snake.unshift({...head});
+                foods[i] = getRandomPosition();
+                intervalTime = Math.max(50, intervalTime - 5);
+                score += 10;
+                updateScore();
+                playSound('beep');
+                clearInterval(intervalId);
+                intervalId = setInterval(moveSnake, intervalTime);
+                ateFood = true;
+                break;
+            }
+        }
+        if (!ateFood) {
+            snake.pop();
+            snake.unshift(head);
+        }
+        if (score % 50 === 0 && score !== 0) {
+            changeBoardColor();
+            playSound('levelUp');
+        }
+        if (score % 50 === 0 && score !== 0 && foods.length < Math.floor(score / 50) + 1) {
+            foods.push(getRandomPosition());
+        }
+        renderBoard();
+    }
+
+    function getFurthestFood(head) {
+        let maxDistance = -Infinity;
+        let furthestFood = null;
+        for (let food of foods) {
+            let distance = getDistance(head, food);
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                furthestFood = food;
+            }
+        }
+        return furthestFood;
+    }
+
+function getBestDirection(head, target) {
+    let path = aStarPathfinding(head, target);
+    if (path && path.length > 1) {
+        let nextStep = path[1];
+        if (nextStep.x > head.x) return 'Right';
+        if (nextStep.x < head.x) return 'Left';
+        if (nextStep.y > head.y) return 'Down';
+        if (nextStep.y < head.y) return 'Up';
+    }
+    return getSafeMove(head); // Fallback to a safe move if no path found
+}
+
+function getSafeMove(head) {
+    for (let dir of ['Up', 'Down', 'Left', 'Right']) {
+        let newHead = {...head};
+        switch (dir) {
+            case 'Up': newHead.y -= 1; break;
+            case 'Down': newHead.y += 1; break;
+            case 'Left': newHead.x -= 1; break;
+            case 'Right': newHead.x += 1; break;
+        }
+        if (!isCollision(newHead)) {
+            return dir;
+        }
+    }
+    return direction; // Default to current direction if no safe move found
+}
+
+function aStarPathfinding(start, goal, maxNodes = 100) {
+    let openSet = [start];
+    let cameFrom = new Map();
+    let gScore = new Map();
+    let fScore = new Map();
+    gScore.set(start, 0);
+    fScore.set(start, getDistance(start, goal));
+    let nodesExplored = 0;
+
+    while (openSet.length > 0 && nodesExplored < maxNodes) {
+        let current = openSet.reduce((a, b) => fScore.get(a) < fScore.get(b) ? a : b);
+
+        if (current.x === goal.x && current.y === goal.y) {
+            return reconstructPath(cameFrom, current);
+        }
+
+        openSet = openSet.filter(node => node !== current);
+        for (let neighbor of getNeighbors(current)) {
+            let tentativeGScore = gScore.get(current) + 1;
+            if (tentativeGScore < (gScore.get(neighbor) || Infinity)) {
+                cameFrom.set(neighbor, current);
+                gScore.set(neighbor, tentativeGScore);
+                fScore.set(neighbor, tentativeGScore + getDistance(neighbor, goal));
+                if (!openSet.includes(neighbor)) {
+                    openSet.push(neighbor);
+                }
+            }
+        }
+        nodesExplored++;
+    }
+
+    return null; // No path found within the node limit
+}
+
+function getNeighbors(node) {
+    let neighbors = [];
+    for (let dir of ['Up', 'Down', 'Left', 'Right']) {
+        let newNode = {...node};
+        switch (dir) {
+            case 'Up': newNode.y -= 1; break;
+            case 'Down': newNode.y += 1; break;
+            case 'Left': newNode.x -= 1; break;
+            case 'Right': newNode.x += 1; break;
+        }
+        if (!isCollision(newNode)) {
+            neighbors.push(newNode);
+        }
+    }
+    return neighbors;
+}
+
+function reconstructPath(cameFrom, current) {
+    let totalPath = [current];
+    while (cameFrom.has(current)) {
+        current = cameFrom.get(current);
+        totalPath.unshift(current);
+    }
+    return totalPath;
+}
+
+function getDistance(pos1, pos2) {
+    return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y);
+}
+
+function isCollision(head) {
+    if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+        return true;
+    }
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === head.x && snake[i].y === head.y) {
+            return true;
+        }
+    }
+    return false;
+}
+
+    function isCorner(head) {
+        return (head.x === 0 && head.y === 0) ||
+               (head.x === 0 && head.y === gridSize - 1) ||
+               (head.x === gridSize - 1 && head.y === 0) ||
+               (head.x === gridSize - 1 && head.y === gridSize - 1);
+    }
+
+    function changeBoardColor() {
+        let newColor = getRandomColor();
+        board.style.backgroundColor = newColor;
+    }
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color;
+        do {
+            color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+        } while (isColorTooClose(color, '#34eb3a') || isColorTooClose(color, 'red'));
+        return color;
+    }
+
+    function isColorTooClose(color1, color2) {
+        const threshold = 100;
+        const c1 = hexToRgb(color1);
+        const c2 = hexToRgb(color2);
+        const distance = Math.sqrt(
+            Math.pow(c1.r - c2.r, 2) +
+            Math.pow(c1.g - c2.g, 2) +
+            Math.pow(c1.b - c2.b, 2)
+        );
+        return distance < threshold;
+    }
+
+    function hexToRgb(hex) {
+        const bigint = parseInt(hex.slice(1), 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: (bigint & 255)
+        };
+    }
+
+    function renderBoard() {
+        board.innerHTML = '';
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+                if (snake.some(segment => segment.x === col && segment.y === row)) {
+                    cell.classList.add('snake');
+                } else if (foods.some(food => food.x === col && food.y === row)) {
+                    cell.classList.add('food');
+                }
+                board.appendChild(cell);
+            }
+        }
+    }
+
+    function getRandomPosition() {
+        let position;
+        do {
+            position = {
+                x: Math.floor(Math.random() * gridSize),
+                y: Math.floor(Math.random() * gridSize)
+            };
+        } while (isCorner(position));
+        return position;
+    }
+
+    function updateScore() {
+        scoreDisplay.textContent = 'Score: ' + score;
+    }
+
+    function playSound(type) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        if (type === 'beep') {
+            oscillator.frequency.value = 440;
+        } else if (type === 'boop') {
+            oscillator.frequency.value = 220;
+        } else if (type === 'levelUp') {
+            oscillator.frequency.value = 880;
+        }
+        oscillator.type = 'square';
+        oscillator.start();
+        gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        oscillator.stop(audioCtx.currentTime + 0.2);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (!firstKeyPress) {
+            firstKeyPress = true;
+            intervalId = setInterval(moveSnake, intervalTime);
+        }
+        switch (e.key) {
+            case 'ArrowUp': if (direction !== 'Down') direction = 'Up'; break;
+            case 'ArrowDown': if (direction !== 'Up') direction = 'Down'; break;
+            case 'ArrowLeft': if (direction !== 'Right') direction = 'Left'; break;
+            case 'ArrowRight': if (direction !== 'Left') direction = 'Right'; break;
+        }
+    });
+
+    startGame();
+</script>
+
+</body>
+</html>
