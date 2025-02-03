@@ -61,8 +61,51 @@
         <label id="toggleSwitch">
             <input type="checkbox" id="selfPlayToggle"> Self-Play Mode
         </label>
+        <center> Arrow keys to start.<br><br></center>
         <div id="board"></div>
-         <center> Arrow keys to start.<br><br></center>
+         <br><br>
+All Code is AI-generated. I just made a bunch of prompts, most of the work was due to token limitations and that I know nothing about programming.<br><br>
+
+    <br><br>
+    Known bugs: autoplay is trash. im not a programmer, I asked the ai to constrain A* with a backup safe. <br><br>
+    the sound breaks, the colors hide things.<br><br>
+    i got bored.<br><br>
+    <br><br>
+Game Area: Centralized game area with a grid-based board.<br><br>
+
+Start Game Button: Button to start the game.
+<br><br>
+Score Display: Displays the current score.
+<br><br>
+Self-Play Mode: Toggle switch to enable or disable self-play mode.
+<br><br>
+Grid-Based Board: 20x20 grid where the snake moves and food appears.
+<br><br>
+Snake Movement: Snake moves in four directions (Up, Down, Left, Right) based on user input or self-play logic.
+<br><br>
+Food Generation: Randomly generates food on the board.
+<br><br>
+Collision Detection: Detects collisions with walls, snake's body, and food.
+<br><br>
+Score Update: Increases score when the snake eats food.
+<br><br>
+Speed Increase: Increases snake's speed as the score increases.
+<br><br>
+Board Color Change: Changes the board color at certain score intervals.
+<br><br>
+Sound Effects: Plays different sounds for eating food, game over, and level up.
+<br><br>
+Self-Play Logic: Snake automatically moves towards the furthest food and avoids collisions.
+<br><br>
+Multiple Food Items: Adds more food items as the score increases.
+<br><br>
+Game Over Alert: Alerts the user when the game is over with the final score.
+<br><br>
+Pathfinding Algorithm: Uses A* pathfinding algorithm to find the shortest path to the target food.
+<br><br>
+Fallback Mechanism: Ensures the snake makes a safe move if no path is found.
+<br><br>
+Safe Move Logic: Checks all possible directions and returns the first safe move it finds.
     </div>
 <script>
     const board = document.getElementById('board');
@@ -378,48 +421,6 @@ function isCollision(head) {
     });
 
     startGame();
-</script><br><br>
-All Code is AI-generated. I just made a bunch of prompts, most of the work was due to token limitations and that I know nothing about programming.<br><br>
-
-    <br><br>
-    Known bugs: autoplay is trash. im not a programmer, I asked the ai to constrain A* with a backup safe. <br><br>
-    the sound breaks, the colors hide things.<br><br>
-    i got bored.<br><br>
-    <br><br>
-Game Area: Centralized game area with a grid-based board.<br><br>
-
-Start Game Button: Button to start the game.
-<br><br>
-Score Display: Displays the current score.
-<br><br>
-Self-Play Mode: Toggle switch to enable or disable self-play mode.
-<br><br>
-Grid-Based Board: 20x20 grid where the snake moves and food appears.
-<br><br>
-Snake Movement: Snake moves in four directions (Up, Down, Left, Right) based on user input or self-play logic.
-<br><br>
-Food Generation: Randomly generates food on the board.
-<br><br>
-Collision Detection: Detects collisions with walls, snake's body, and food.
-<br><br>
-Score Update: Increases score when the snake eats food.
-<br><br>
-Speed Increase: Increases snake's speed as the score increases.
-<br><br>
-Board Color Change: Changes the board color at certain score intervals.
-<br><br>
-Sound Effects: Plays different sounds for eating food, game over, and level up.
-<br><br>
-Self-Play Logic: Snake automatically moves towards the furthest food and avoids collisions.
-<br><br>
-Multiple Food Items: Adds more food items as the score increases.
-<br><br>
-Game Over Alert: Alerts the user when the game is over with the final score.
-<br><br>
-Pathfinding Algorithm: Uses A* pathfinding algorithm to find the shortest path to the target food.
-<br><br>
-Fallback Mechanism: Ensures the snake makes a safe move if no path is found.
-<br><br>
-Safe Move Logic: Checks all possible directions and returns the first safe move it finds.
+</script>
 </body>
 </html>
